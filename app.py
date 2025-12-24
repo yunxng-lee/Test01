@@ -217,5 +217,46 @@ with st.sidebar:
         for r in reversed(st.session_state.reviews[-3:]):
             st.markdown(f"**{r['name']}**: {r['msg']} <small>({r['time']})</small>", unsafe_allow_html=True)
             st.markdown("<div style='border-bottom: 0.5px solid #444;'></div>", unsafe_allow_html=True)
+# --- 기존 코드 맨 아래에 이어서 붙여넣으세요 ---
+
+# 4. 관리자 전용 리뷰 관리 섹션
+with st.sidebar:
+    st.markdown("---")
+    with st.expander("🔐 관리자 모드"):
+        # 관리자 비밀번호 설정 (원하는 비밀번호로 변경하세요)
+        admin_password = st.text_input("비밀번호 입력", type="password")
+        
+        if admin_password == "1234":  # ← 실제 사용할 비밀번호로 수정하세요
+            st.success("관리자 인증 성공")
+            
+            if not st.session_state.reviews:
+                st.info("등록된 리뷰가 없습니다.")
+            else:
+                st.write(f"총 {len(st.session_state.reviews)}개의 리뷰")
+                
+                # 리뷰별 수정/삭제 기능
+                # 인덱스 번호를 사용하여 각 리뷰를 제어합니다.
+                for i, r in enumerate(st.session_state.reviews):
+                    with st.container():
+                        st.markdown(f"**[{i}] {r['name']}** ({r['time']})")
+                        
+                        # 수정 입력창 (기존 내용을 기본값으로 설정)
+                        new_msg = st.text_input(f"수정내용 (ID:{i})", value=r['msg'], key=f"edit_{i}")
+                        
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if st.button(f"수정", key=f"btn_edit_{i}"):
+                                st.session_state.reviews[i]['msg'] = new_msg
+                                st.success("수정됨")
+                                st.rerun()
+                        with col2:
+                            if st.button(f"삭제", key=f"btn_del_{i}"):
+                                st.session_state.reviews.pop(i)
+                                st.warning("삭제됨")
+                                st.rerun()
+                        st.markdown("---")
+        elif admin_password:
+            st.error("비밀번호가 틀렸습니다.")
+
 
 
