@@ -3,7 +3,7 @@ import openai
 from datetime import datetime
 
 # --- 0. 앱 기본 설정 (가장 상단에 위치) ---
-st.set_page_config(layout="wide", page_title="할 말은 해야지")
+st.set_page_config(layout="wide", page_title="AI 말투 변환 비서")
 
 # --- 1. 커스텀 CSS 주입 (디자인 업그레이드) ---
 st.markdown("""
@@ -109,7 +109,7 @@ if not st.session_state.api_key:
 client = openai.OpenAI(api_key=st.session_state.api_key)
 
 # --- 3. 메인 화면 구성 (Tabs 사용) ---
-st.title("할 말은 하고 살자")
+st.title("🗣️ AI 말투 변환 비서")
 
 tab1, tab2 = st.tabs(["📝 메시지 작성", "✨ 변환 결과"])
 
@@ -179,33 +179,3 @@ with tab2:
         st.info("변환 버튼을 누르면 이곳에 결과가 나타납니다.")
     else:
         st.text_area("최종 메시지 (복사해서 사용하세요)", value=st.session_state.last_result, height=250, key="result_display")
-
-# ... (상단 CSS 및 설정 코드는 동일) ...
-
-# --- 1. 상태 관리 초기화 ---
-if 'history' not in st.session_state:
-    st.session_state.history = []
-if 'reviews' not in st.session_state:
-    # 예시 리뷰 데이터
-    st.session_state.reviews = [{"name": "개발자", "text": "앱이 정말 유용하네요!", "time": "2023-10-27"}]
-
-# ... (사이드바 및 API 설정 코드는 동일) ...
-
-# --- 3. 메인 화면 구성 (Tabs에 리뷰 탭 추가) ---
-st.title("🗣️ AI 말투 변환 비서")
-
-# 탭을 3개로 늘립니다.
-tab1, tab2, tab3 = st.tabs(["📝 메시지 작성", "✨ 변환 결과", "💬 사용자 리뷰"])
-
-with tab1:
-    # ... (기존 입력 폼 코드 동일) ...
-    with st.form(key='input_form'):
-        # (기존 내용 생략 - 이전 코드와 동일하게 유지하세요)
-        submit = st.form_submit_button("🚀 예쁘게 변환하기")
-
-with tab2:
-    # ... (기존 결과 출력 코드 동일) ...
-    if 'last_result' not in st.session_state:
-        st.info("변환 버튼을 누르면 이곳에 결과가 나타납니다.")
-    else:
-        st.text_area("최종 메시지", value=st.session_state.last_result, height=250)
