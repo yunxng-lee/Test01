@@ -3,7 +3,7 @@ import openai
 from datetime import datetime
 
 # --- 0. 앱 기본 설정 (가장 상단에 위치) ---
-st.set_page_config(layout="wide", page_title="할 말은 하고 살자자""
+st.set_page_config(layout="wide", page_title="할 말은 하고 살자")
 
 # --- 1. 커스텀 CSS 주입 (디자인 업그레이드) ---
 st.markdown("""
@@ -257,6 +257,7 @@ with st.sidebar:
                         st.markdown("---")
         elif admin_password:
             st.error("비밀번호가 틀렸습니다.")
+
 
 
 
