@@ -3,7 +3,7 @@ import openai
 from datetime import datetime
 
 # --- 0. 앱 기본 설정 (가장 상단에 위치) ---
-st.set_page_config(layout="wide", page_title="AI 말투 변환 비서")
+st.set_page_config(layout="wide", page_title="할 말은 하고 살자자""
 
 # --- 1. 커스텀 CSS 주입 (디자인 업그레이드) ---
 st.markdown("""
@@ -109,7 +109,7 @@ if not st.session_state.api_key:
 client = openai.OpenAI(api_key=st.session_state.api_key)
 
 # --- 3. 메인 화면 구성 (Tabs 사용) ---
-st.title("🗣️ AI 말투 변환 비서")
+st.title("🗣️ 할 말은 하고 살자 ")
 
 tab1, tab2 = st.tabs(["📝 메시지 작성", "✨ 변환 결과"])
 
@@ -226,7 +226,7 @@ with st.sidebar:
         # 관리자 비밀번호 설정 (원하는 비밀번호로 변경하세요)
         admin_password = st.text_input("비밀번호 입력", type="password")
         
-        if admin_password == "1234":  # ← 실제 사용할 비밀번호로 수정하세요
+        if admin_password == "1844":  # ← 실제 사용할 비밀번호로 수정하세요
             st.success("관리자 인증 성공")
             
             if not st.session_state.reviews:
@@ -257,6 +257,7 @@ with st.sidebar:
                         st.markdown("---")
         elif admin_password:
             st.error("비밀번호가 틀렸습니다.")
+
 
 
 
