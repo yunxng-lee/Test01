@@ -2,169 +2,180 @@ import streamlit as st
 import openai
 from datetime import datetime
 
-# --- 1. 앱 초기 설정 및 상태 관리 ---
+# --- 0. 앱 기본 설정 (가장 상단에 위치) ---
+st.set_page_config(layout="wide", page_title="할 말은 해야지")
 
-# 세션 상태(Session State) 초기화: 앱을 껐다가 켜기 전까지 데이터를 유지합니다.
+# --- 1. 커스텀 CSS 주입 (디자인 업그레이드) ---
+st.markdown("""
+<style>
+/* 메인 배경 및 폰트 설정 */
+.main .block-container {
+    max-width: 1100px;
+    padding-top: 3rem;
+}
+
+/* 제목 스타일 */
+h1 {
+    color: #FF4B4B;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    font-size: 2.8em !important;
+    border-bottom: 2px solid #FF4B4B;
+    padding-bottom: 15px;
+    margin-bottom: 30px;
+}
+
+/* 입력창 스타일 커스텀 */
+.stTextInput>div>div>input, .stTextArea>div>div>textarea {
+    background-color: #1e1e1e !important;
+    color: white !important;
+    border: 1px solid #444 !important;
+    border-radius: 10px !important;
+}
+
+.stTextInput>div>div>input:focus, .stTextArea>div>div>textarea:focus {
+    border-color: #FF4B4B !important;
+    box-shadow: 0 0 10px rgba(255, 75, 75, 0.2) !important;
+}
+
+/* 버튼 스타일 */
+.stButton>button {
+    width: 100%;
+    background-color: #FF4B4B !important;
+    color: white !important;
+    border: none !important;
+    padding: 15px !important;
+    font-weight: bold !important;
+    border-radius: 12px !important;
+    transition: 0.3s !important;
+}
+
+.stButton>button:hover {
+    background-color: #ff3333 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 75, 75, 0.4);
+}
+
+/* 탭 스타일 */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 10px;
+}
+
+.stTabs [data-baseweb="tab"] {
+    height: 50px;
+    background-color: #262730;
+    border-radius: 10px 10px 0 0;
+    color: #888;
+    padding: 0 20px;
+}
+
+.stTabs [aria-selected="true"] {
+    background-color: #FF4B4B !important;
+    color: white !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --- 2. 상태 관리 및 자동 API 설정 ---
 if 'history' not in st.session_state:
     st.session_state.history = []
 
 if 'api_key' not in st.session_state:
     st.session_state.api_key = ""
 
-st.set_page_config(layout="wide", page_title="AI 말투 변환 비서")
-st.title("🗣️ AI 말투 변환 및 비서 툴 (Ver 2.0)")
-
-# --- 2. 사이드바 (API Key 및 기록) ---
-
+# 사이드바 설정
 with st.sidebar:
-    st.header("설정 및 기록")
+    st.header("⚙️ 설정 및 기록")
     
-    # API Key 입력
-    st.session_state.api_key = st.text_input(
-        "🔑 OpenAI API Key를 입력하세요", 
-        type="password", 
-        value=st.session_state.api_key
-    )
-    
-    # API Key 검증 및 클라이언트 초기화
-    if st.session_state.api_key:
-        try:
-            openai.api_key = st.session_state.api_key
-            st.success("API 키 입력 완료!")
-        except Exception:
-            st.error("API 키 형식이 올바르지 않습니다.")
-            st.stop()
+    # [중요] Secrets에 등록된 키가 있으면 자동 사용, 없으면 입력받음
+    if "OPENAI_API_KEY" in st.secrets:
+        st.session_state.api_key = st.secrets["OPENAI_API_KEY"]
+        st.success("✅ 시스템 API 키가 연결되었습니다.")
     else:
-        st.info("API Key가 없으면 AI가 작동하지 않습니다.")
-        st.stop()
+        st.session_state.api_key = st.text_input("🔑 OpenAI API Key 입력", type="password")
+        st.info("관리자 키가 없으면 개인 키를 입력해야 합니다.")
 
     st.markdown("---")
-    st.subheader("최근 변환 기록")
-    if st.session_state.history:
-        for i, item in enumerate(reversed(st.session_state.history)):
-            st.caption(f"{i+1}. [{item['time']}] {item['tone']} 변환")
-            st.markdown(f"**대상:** {item['target']}")
-            st.text_area("변환 결과", item['result'], height=100, key=f"hist_{i}")
+    st.subheader("📚 최근 기록")
+    for item in reversed(st.session_state.history[-5:]):  # 최근 5개만
+        with st.expander(f"[{item['time']}] {item['tone']}"):
+            st.write(f"**To:** {item['target']}")
+            st.caption(item['result'])
+
+# API 클라이언트 초기화
+if not st.session_state.api_key:
+    st.warning("⚠️ 사이드바에서 API 키를 설정하거나 Secrets에 등록해 주세요.")
+    st.stop()
+
+client = openai.OpenAI(api_key=st.session_state.api_key)
+
+# --- 3. 메인 화면 구성 (Tabs 사용) ---
+st.title("할 말은 하고 살자")
+
+tab1, tab2 = st.tabs(["📝 메시지 작성", "✨ 변환 결과"])
+
+with tab1:
+    with st.form(key='input_form'):
+        col1, col2 = st.columns(2)
+        with col1:
+            tone = st.selectbox("원하는 어투", ["정중하고 예의바르게", "친근하고 캐주얼하게", "격식 있는 비즈니스체", "재치 있는 유머체"])
+        with col2:
+            strength = st.slider("어투 강도 (1~5)", 1, 5, 3)
+            
+        col3, col4 = st.columns(2)
+        with col3:
+            target = st.text_input("받는 사람", placeholder="예: 팀장님, 여자친구, 거래처 담당자")
+        with col4:
+            situation = st.text_input("상황", placeholder="예: 휴가 신청, 약속 늦음, 거절할 때")
+            
+        content = st.text_area("변환할 원문 내용", height=150, placeholder="예: 나 내일 아파서 못가")
+        must_include = st.text_input("꼭 포함되어야 할 단어 (선택)", placeholder="예: 죄송합니다, 다음 주에 봐요")
+        
+        submit = st.form_submit_button("🚀 예쁘게 변환하기")
+
+# --- 4. 변환 로직 ---
+if submit:
+    if not content:
+        st.error("내용을 입력해 주세요!")
     else:
-        st.caption("아직 기록된 변환이 없습니다.")
+        with st.spinner("AI가 가장 적절한 표현을 찾는 중..."):
+            try:
+                prompt = f"""
+                당신은 커뮤니케이션 전문가입니다. 아래 조건에 맞춰 원문을 변환하세요.
+                - 대상: {target}
+                - 상황: {situation}
+                - 어투: {tone} (강도: {strength}/5)
+                - 필수 포함 단어: {must_include}
+                - 원문: {content}
+                
+                불필요한 설명 없이 오직 변환된 메시지 내용만 출력하세요.
+                """
+                
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                
+                result = response.choices[0].message.content
+                
+                # 결과 저장 및 탭 이동 시뮬레이션
+                st.session_state.last_result = result
+                st.session_state.history.append({
+                    "time": datetime.now().strftime("%H:%M"),
+                    "tone": tone,
+                    "target": target,
+                    "result": result
+                })
+                
+                # 결과 탭에 출력
+                with tab2:
+                    st.success("완료되었습니다!")
+                    st.text_area("최종 메시지 (복사해서 사용하세요)", value=result, height=250)
+                    st.balloons()
+            except Exception as e:
+                st.error(f"오류 발생: {e}")
 
-# --- 3. 입력 폼 (st.form을 사용하여 '다시 시도' 및 상태 관리) ---
-
-with st.form(key='tone_converter_form'):
-    
-    st.subheader("1. 변환 옵션 설정")
-    col_opt1, col_opt2 = st.columns([2, 1])
-    
-    with col_opt1:
-        # 어투 선택 드롭다운 메뉴
-        tone = st.selectbox(
-            "📝 변환할 어투를 선택하세요",
-            ("존중하고 예의 바르게 (정중체)", "친근하고 캐주얼하게 (평어체)", "비즈니스 공식 메일처럼 (업무체)", "센스 있고 위트있게")
-        )
-    with col_opt2:
-        # 어투 강도 조절 슬라이더
-        strength = st.slider(
-            "💪 어투 강도 조절 (1:약함 ~ 5:강함)", 
-            min_value=1, 
-            max_value=5, 
-            value=3, 
-            step=1
-        )
-
-    st.subheader("2. 대화 상황 입력")
-    col1, col2 = st.columns(2)
-    with col1:
-        target = st.text_input("✅ 전달할 사람")
-    with col2:
-        situation = st.text_input("✅ 상황")
-
-    st.subheader("3. 변환할 내용")
-    content = st.text_area(
-        "✅ 하고 싶은 말을 편하게 적어주세요 (AI가 이 내용을 변환합니다.)",
-        placeholder="몸아파서 그만둔다",
-        height=150
-    )
-    
-    must_include_phrases = st.text_input("✨ 필수로 들어갈 말/키워드 (예: 감사했습니다, 3월 10일)", key='keywords')
-
-    uploaded_file = st.file_uploader(
-        "🖼️ (선택사항) 대화 캡쳐 사진을 올려주세요. (현재는 텍스트만 처리합니다.)",
-        type=['png', 'jpg', 'jpeg']
-    )
-    
-    if uploaded_file is not None:
-        st.warning("⚠️ 이미지 인식 기능은 GPT-4o 등 고성능 모델이 필요합니다. 현재는 텍스트 변환만 진행합니다.")
-
-    # 버튼: st.form_submit_button은 '예쁘게 변환하기'와 '다시 시도' 기능을 모두 수행합니다.
-    submit_button = st.form_submit_button(label='🚀 예쁘게 변환하기 / 다시 시도')
-
-
-# --- 4. AI 변환 로직 실행 (버튼 클릭 시) ---
-if submit_button:
-    
-    if not all([target, situation, content]):
-        st.error("필수 입력 항목을 모두 채워주세요.")
-        st.stop()
-    
-    # 프롬프트(지시사항) 만들기: 모든 변수를 포함
-    prompt = f"""
-    당신은 말투 변환 전문가입니다. 주어진 '원문'의 내용을 '상황'과 '대상'에 맞춰서 다음 어투로 수정하세요.
-    수정 시, '필수 키워드'를 반드시 포함하고, 어투 강도({strength}/5)를 최대한 반영해야 합니다.
-    
-    --- 입력 정보 ---
-    어투: {tone}
-    강도: {strength}
-    상황: {situation}
-    대상: {target}
-    원문: {content}
-    필수 키워드: {must_include_phrases if must_include_phrases else "없음"}
-    
-    --- 출력 규칙 ---
-    1. 설명 없이, 수정된 메시지 내용만 바로 출력합니다.
-    """
-    
-    try:
-        client = openai.OpenAI(api_key=st.session_state.api_key)
-        
-        with st.spinner("AI가 머리를 굴리며 최적의 메시지를 작성 중입니다..."):
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "당신은 사용자 의도를 완벽히 파악하여 문장을 가장 적절한 어투로 변환해주는 전문가입니다."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7 
-            )
-        
-        # 5. 결과 출력 및 복사 기능
-        translated_text = response.choices[0].message.content
-        st.success("🎉 변환 완료! 아래 메시지를 복사하여 사용하세요.")
-        
-        st.text_area(
-            "최종 변환 메시지", 
-            translated_text, 
-            height=250, 
-            key='final_output'
-        )
-
-        # 6. 기록 저장 (Session State)
-        st.session_state.history.append({
-            "time": datetime.now().strftime("%H:%M:%S"),
-            "target": target,
-            "tone": tone,
-            "result": translated_text
-        })
-        
-        # 기록 저장 후 사이드바를 다시 그리도록 페이지를 새로고침 (Streamlit의 일반적인 패턴)
-        st.experimental_rerun()
-
-
-    except openai.AuthenticationError:
-        st.error("❌ API 키 오류: OpenAI API Key가 올바르지 않거나 만료되었습니다. 사이드바를 확인해 주세요.")
-    except Exception as e:
-        # 429 에러 등 기타 오류 처리
-        error_msg = str(e)
-        if "insufficient_quota" in error_msg:
-             st.error("❌ 할당량 부족 오류: OpenAI 크레딧이 부족합니다. 결제 정보를 확인해 주세요.")
-        else:
-             st.error(f"❌ AI 요청 중 오류가 발생했습니다: {e}")
+with tab2:
+    if 'last_result' not in st.session_state:
+        st.info("변환 버튼을 누르면 이곳에 결과가 나타납니다.")
+    else:
+        st.text_area("최종 메시지 (복사해서 사용하세요)", value=st.session_state.last_result, height=250, key="result_display")
