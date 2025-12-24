@@ -180,27 +180,27 @@ with tab2:
     else:
         st.text_area("최종 메시지 (복사해서 사용하세요)", value=st.session_state.last_result, height=250, key="result_display")
 
-# --- 기존 코드 건드리지 않고 아래에 추가 ---
+# --- 기존 코드 맨 아래에 이어서 붙여넣으세요 ---
 
-# 1. 리뷰 데이터 저장소 초기화 (기존에 없다면 생성)
+# 1. 리뷰 데이터 저장소 초기화
 if 'reviews' not in st.session_state:
     st.session_state.reviews = []
 
-# 2. 사이드바 하단에 작은 리뷰 섹션 만들기
+# 2. 사이드바 하단 리뷰 섹션
 with st.sidebar:
-    st.markdown("---") # 구분선
+    st.markdown("---")
     st.subheader("💬 사용자 리뷰")
     
-    # 입력 공간을 작게 만들기 위해 폼 사용
+    # [주의] 아래 코드들의 들여쓰기(간격)가 정확히 일치해야 합니다.
     with st.form(key='sidebar_review_form', clear_on_submit=True):
-       rev_nick = st.text_input("닉네임", placeholder="익명", label_visibility="collapsed")
-       rev_msg = st.text_area("리뷰 내용", placeholder="후기를 남겨주세요!", height=70, label_visibility="collapsed")
+        rev_nick = st.text_input("닉네임", placeholder="익명", label_visibility="collapsed")
+        rev_msg = st.text_area("리뷰 내용", placeholder="후기를 남겨주세요!", height=70, label_visibility="collapsed")
         
-        # 버튼을 작게 배치
+        # 이 버튼 줄이 위 입력창들과 왼쪽 시작점이 딱 맞아야 합니다.
         submit_rev = st.form_submit_button("리뷰 등록")
         
         if submit_rev:
-            if rev_msg: # 내용이 있을 때만 저장
+            if rev_msg:
                 new_entry = {
                     "name": rev_nick if rev_nick else "익명",
                     "msg": rev_msg,
@@ -211,10 +211,9 @@ with st.sidebar:
             else:
                 st.warning("내용을 입력해주세요.")
 
-    # 3. 등록된 리뷰 목록 표시 (사이드바 안에서 작게 보여줌)
+    # 3. 등록된 리뷰 목록 표시
     if st.session_state.reviews:
         st.markdown("**최근 리뷰**")
-        # 최근 3개만 작게 표시
         for r in reversed(st.session_state.reviews[-3:]):
             st.markdown(f"**{r['name']}**: {r['msg']} <small>({r['time']})</small>", unsafe_allow_html=True)
             st.markdown("<div style='border-bottom: 0.5px solid #444;'></div>", unsafe_allow_html=True)
