@@ -193,8 +193,8 @@ with st.sidebar:
     
     # 입력 공간을 작게 만들기 위해 폼 사용
     with st.form(key='sidebar_review_form', clear_on_submit=True):
-        rev_nick = st.text_input("닉네임", placeholder="익명", str_label_visibility="collapsed")
-        rev_msg = st.text_area("리뷰 내용", placeholder="후기를 남겨주세요!", height=70, str_label_visibility="collapsed")
+       rev_nick = st.text_input("닉네임", placeholder="익명", label_visibility="collapsed")
+       rev_msg = st.text_area("리뷰 내용", placeholder="후기를 남겨주세요!", height=70, label_visibility="collapsed")
         
         # 버튼을 작게 배치
         submit_rev = st.form_submit_button("리뷰 등록")
@@ -218,4 +218,5 @@ with st.sidebar:
         for r in reversed(st.session_state.reviews[-3:]):
             st.markdown(f"**{r['name']}**: {r['msg']} <small>({r['time']})</small>", unsafe_allow_html=True)
             st.markdown("<div style='border-bottom: 0.5px solid #444;'></div>", unsafe_allow_html=True)
+
 
