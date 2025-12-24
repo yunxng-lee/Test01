@@ -179,3 +179,73 @@ with tab2:
         st.info("변환 버튼을 누르면 이곳에 결과가 나타납니다.")
     else:
         st.text_area("최종 메시지 (복사해서 사용하세요)", value=st.session_state.last_result, height=250, key="result_display")
+
+# ... (상단 CSS 및 설정 코드는 동일) ...
+
+# --- 1. 상태 관리 초기화 ---
+if 'history' not in st.session_state:
+    st.session_state.history = []
+if 'reviews' not in st.session_state:
+    # 예시 리뷰 데이터
+    st.session_state.reviews = [{"name": "개발자", "text": "앱이 정말 유용하네요!", "time": "2023-10-27"}]
+
+# ... (사이드바 및 API 설정 코드는 동일) ...
+
+# --- 3. 메인 화면 구성 (Tabs에 리뷰 탭 추가) ---
+st.title("🗣️ AI 말투 변환 비서")
+
+# 탭을 3개로 늘립니다.
+tab1, tab2, tab3 = st.tabs(["📝 메시지 작성", "✨ 변환 결과", "💬 사용자 리뷰"])
+
+with tab1:
+    # ... (기존 입력 폼 코드 동일) ...
+    with st.form(key='input_form'):
+        # (기존 내용 생략 - 이전 코드와 동일하게 유지하세요)
+        submit = st.form_submit_button("🚀 예쁘게 변환하기")
+
+with tab2:
+    # ... (기존 결과 출력 코드 동일) ...
+    if 'last_result' not in st.session_state:
+        st.info("변환 버튼을 누르면 이곳에 결과가 나타납니다.")
+    else:
+        st.text_area("최종 메시지", value=st.session_state.last_result, height=250)
+
+# --- 신규 추가: 리뷰 탭 ---
+with tab3:
+    st.subheader("💬 리뷰")
+    
+    # 리뷰 입력 구역
+    with st.form(key='review_form', clear_on_submit=True):
+        col_name, col_text = st.columns([1, 3])
+        with col_name:
+            user_name = st.text_input("닉네임", placeholder="익명")
+        with col_text:
+            user_review = st.text_input("리뷰 내용", placeholder="사용 후기를 남겨주세요!")
+        
+        submit_review = st.form_submit_button("리뷰 등록")
+        
+        if submit_review:
+            if user_name and user_review:
+                new_review = {
+                    "name": user_name,
+                    "text": user_review,
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M")
+                }
+                st.session_state.reviews.append(new_review)
+                st.success("리뷰가 등록되었습니다!")
+                st.rerun() # 화면 새로고침하여 즉시 반영
+            else:
+                st.warning("닉네임과 내용을 모두 입력해주세요.")
+
+    st.markdown("---")
+    
+    # 리뷰 리스트 출력 (최신순)
+    if st.session_state.reviews:
+        for rev in reversed(st.session_state.reviews):
+            st.markdown(f"""
+            **{rev['name']}** <small style='color:gray;'>({rev['time']})</small>  
+            {rev['text']}
+            <hr style='margin:10px 0; border-top: 1px dashed #444;'>
+            """, unsafe_allow_html=True)
+    else:
+        st.caption("첫 번째 리뷰를 남겨보세요!")
